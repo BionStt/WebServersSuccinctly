@@ -53,7 +53,9 @@ namespace Clifton.WebServer
 		/// </summary>
 		public bool ContainsKey(RouteKey key)
 		{
-			return routes.ContainsKey(key);
+			RouteEntry entry = Parse(key, new PathParams());
+
+			return entry != null;
 		}
 
 		/// <summary>
@@ -61,7 +63,9 @@ namespace Clifton.WebServer
 		/// </summary>
 		public bool Contains(string verb, string path)
 		{
-			return ContainsKey(NewKey(verb, path));
+			RouteEntry entry = Parse(NewKey(verb, path), new PathParams());
+
+			return entry != null;
 		}
 
 		/// <summary>
@@ -144,20 +148,27 @@ namespace Clifton.WebServer
 		protected RouteEntry Parse(RouteKey key, PathParams parms)
 		{
 			RouteEntry entry = null;
-			string[] pathSegments = key.Path.Split('/');
 
-			foreach (KeyValuePair<RouteKey, RouteEntry> route in routes)
+			// First, check non-parameterized routes.  
+			// The most performant way to handle parameters is after the path,
+			// rather than embedding parameters in the URL itself.
+			if (!routes.TryGetValue(key, out entry))
 			{
-				// Above all else, verbs must match.
-				if (route.Key.Verb == key.Verb)
-				{
-					string[] routeSegments = route.Key.Path.Split('/');
+				string[] pathSegments = key.Path.Split('/');
 
-					// Then, segments must match
-					if (Match(pathSegments, routeSegments, parms))
+				foreach (KeyValuePair<RouteKey, RouteEntry> route in routes)
+				{
+					// Above all else, verbs must match.
+					if (route.Key.Verb == key.Verb)
 					{
-						entry = route.Value;
-						break;
+						string[] routeSegments = route.Key.Path.Split('/');
+
+						// Then, segments must match
+						if (Match(pathSegments, routeSegments, parms))
+						{
+							entry = route.Value;
+							break;
+						}
 					}
 				}
 			}
