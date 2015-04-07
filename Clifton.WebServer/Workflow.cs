@@ -79,6 +79,7 @@ namespace Clifton.WebServer
 		public Workflow(Action<T> abortHandler, Action<T, Exception> exceptionHandler)
 		{
 			items = new List<WorkflowItem<T>>();
+            AbortHandler = abortHandler;
 			ExceptionHandler = exceptionHandler;
 		}
 
