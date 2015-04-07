@@ -101,19 +101,20 @@ namespace Clifton.WebServer
 			// Inspect the route to see if we should do session expiration and/or session authorization checks.
 			WorkflowState ret = WorkflowState.Continue;
 			RouteEntry entry = null;
+			PathParams parms = null;
 
-			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry))
+			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry, out parms))
 			{
 				if (entry.SessionExpirationHandler != null)
 				{
-					ret = entry.SessionExpirationHandler(workflowContinuation, context, session);
+					ret = entry.SessionExpirationHandler(workflowContinuation, context, session, parms);
 				}
 
 				if (ret == WorkflowState.Continue)
 				{
 					if (entry.AuthorizationHandler != null)
 					{
-						ret = entry.AuthorizationHandler(workflowContinuation, context, session);
+						ret = entry.AuthorizationHandler(workflowContinuation, context, session, parms);
 					}
 				}
 			}

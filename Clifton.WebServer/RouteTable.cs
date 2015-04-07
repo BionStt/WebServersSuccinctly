@@ -81,35 +81,51 @@ namespace Clifton.WebServer
 		}
 
 		/// <summary>
-		/// Get the route entry for the verb and path.
+		/// Get the route entry for the verb and path including any path parameters.
+		/// Throws an exception if the route isn't found.
 		/// </summary>
-		public RouteEntry GetRouteEntry(RouteKey key)
+		public RouteEntry GetRouteEntry(RouteKey key, out PathParams parms)
 		{
-			return routes.ThrowIfKeyDoesNotExist(key, "The route key " + key.ToString() + " does not exist.")[key];
+			parms = new PathParams();
+			RouteEntry entry = Parse(key, parms);
+
+			if (entry == null)
+			{
+				throw new ApplicationException("The route key " + key.ToString() + " does not exist.");
+			}
+
+			return entry;
 		}
 
 		/// <summary>
-		/// Get the route entry for the verb and path.
+		/// Get the route entry for the verb and path including any path parameters.
+		/// Throws an exception if the route isn't found.
 		/// </summary>
-		public RouteEntry GetRouteEntry(string verb, string path)
+		public RouteEntry GetRouteEntry(string verb, string path, out PathParams parms)
 		{
-			return GetRouteEntry(NewKey(verb, path));
+			return GetRouteEntry(NewKey(verb, path), out parms);
 		}
 
 		/// <summary>
-		/// Returns true and populates the out entry parameter if the key exists.
+		/// Returns true and populates the route entry and path parameters if the key exists.
 		/// </summary>
-		public bool TryGetRouteEntry(RouteKey key, out RouteEntry entry)
+		public bool TryGetRouteEntry(RouteKey key, out RouteEntry entry, out PathParams parms)
 		{
-			return routes.TryGetValue(key, out entry);
+			parms = new PathParams();
+			entry = Parse(key, parms);
+
+			return entry != null;
 		}
 
 		/// <summary>
-		/// Returns true and populates the out entry parameter if the key exists.
+		/// Returns true and populates the route entry and path parameters if the key exists.
 		/// </summary>
-		public bool TryGetRouteEntry(string verb, string path, out RouteEntry entry)
+		public bool TryGetRouteEntry(string verb, string path, out RouteEntry entry, out PathParams parms)
 		{
-			return routes.TryGetValue(NewKey(verb, path), out entry);
+			parms = new PathParams();
+			entry = Parse(NewKey(verb, path), parms);
+
+			return entry != null;
 		}
 
 		/// <summary>
@@ -118,6 +134,72 @@ namespace Clifton.WebServer
 		public RouteKey NewKey(string verb, string path)
 		{
 			return new RouteKey() { Verb = verb, Path = path };
+		}
+
+		/// <summary>
+		/// Parse the browser's path request and match it against the routes.
+		/// If found, return the route entry (otherwise null). 
+		/// Also if found, the parms will be populated with any segment parameters.
+		/// </summary>
+		protected RouteEntry Parse(RouteKey key, PathParams parms)
+		{
+			RouteEntry entry = null;
+			string[] pathSegments = key.Path.Split('/');
+
+			foreach (KeyValuePair<RouteKey, RouteEntry> route in routes)
+			{
+				// Above all else, verbs must match.
+				if (route.Key.Verb == key.Verb)
+				{
+					string[] routeSegments = route.Key.Path.Split('/');
+
+					// Then, segments must match
+					if (Match(pathSegments, routeSegments, parms))
+					{
+						entry = route.Value;
+						break;
+					}
+				}
+			}
+
+			return entry;
+		}
+
+		/// <summary>
+		/// Return true if the path and the route segments match.  Any parameters in the path
+		/// get put into parms.  The first route that matches will win.
+		/// </summary>
+		protected bool Match(string[] pathSegments, string[] routeSegments, PathParams parms)
+		{
+			// Basic check: # of segments must be the same.
+			bool ret = pathSegments.Length == routeSegments.Length;
+
+			if (ret)
+			{
+				int n = 0;
+
+				// Check each segment
+				while (n < pathSegments.Length && ret)
+				{
+					string pathSegment = pathSegments[n];
+					string routeSegment = routeSegments[n];
+					++n;
+
+					// Is it a parameterized segment (aka "capture segment") ?
+					if (routeSegment.BeginsWith("{"))
+					{
+						string parmName = routeSegment.Between('{', '}');
+						string value = pathSegment;
+						parms[parmName] = value;
+					}
+					else // We could perform other checks, such as regex
+					{
+						ret = pathSegment == routeSegment;
+					}
+				}
+			}
+
+			return ret;
 		}
 	}
 }

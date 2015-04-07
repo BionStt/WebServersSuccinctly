@@ -50,8 +50,8 @@ namespace WorkflowHandler
 
 		public static void Main(string[] args)
 		{
-			string externalIP = GetExternalIP();
-			Console.WriteLine("External IP: " + externalIP);
+			//string externalIP = GetExternalIP();
+			//Console.WriteLine("External IP: " + externalIP);
 			requestHandler = new SingleThreadedQueueingHandler();
 			string websitePath = GetWebsitePath();
 			routeTable = InitializeRouteTable();
@@ -69,9 +69,19 @@ namespace WorkflowHandler
 		{
 			RouteTable routeTable = new RouteTable();
 
+			routeTable.AddRoute("get", "param/{p1}/subpage/{p2}", new RouteEntry()
+			{
+				RouteHandler = (continuation, context, session, parms) =>
+				{
+					context.RespondWith("<p>p1 = " + parms["p1"] + "</p><p>p2 = " + parms["p2"] + "</p>");
+					
+					return WorkflowState.Done;
+				}
+			});
+
 			routeTable.AddRoute("get", "restricted", new RouteEntry() 
-				{ 
-					RouteHandler = (continuation, context, session) => 
+				{
+					RouteHandler = (continuation, context, session, parms) => 
 					{
 						throw new ApplicationException("You can't do that."); 
 					} 
@@ -79,7 +89,7 @@ namespace WorkflowHandler
 			
 			routeTable.AddRoute("get", "testsession", new RouteEntry()
 			{
-				SessionExpirationHandler = (continuation, context, session) =>
+				SessionExpirationHandler = (continuation, context, session, parms) =>
 					{
 						if (session.Expired)
 						{
@@ -90,7 +100,7 @@ namespace WorkflowHandler
 							return WorkflowState.Continue;
 						}
 					},
-				AuthorizationHandler = (continuation, context, session) =>
+				AuthorizationHandler = (continuation, context, session, parms) =>
 					{
 						if (!session.Authorized)
 						{
@@ -101,7 +111,7 @@ namespace WorkflowHandler
 							return WorkflowState.Continue;
 						}
 					},
-				RouteHandler = (continuation, context, session) =>
+				RouteHandler = (continuation, context, session, parms) =>
 					{
 						context.RespondWith("<p>Looking good!</p>");
 
@@ -111,7 +121,7 @@ namespace WorkflowHandler
 
 			routeTable.AddRoute("get", "SetState", new RouteEntry()
 			{
-				RouteHandler = (continuation, context, session) =>
+				RouteHandler = (continuation, context, session, pathParams) =>
 					{
 						Dictionary<string, string> parms = context.GetUrlParameters();
 						session.Expired = GetBooleanState(parms, "Expired", false);

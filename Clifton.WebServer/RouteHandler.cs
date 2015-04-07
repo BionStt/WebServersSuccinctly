@@ -59,12 +59,13 @@ namespace Clifton.WebServer
 			WorkflowState ret = WorkflowState.Continue;
 			RouteEntry entry = null;
 			Session session = sessionManager != null ? sessionManager[context] : null;
+			PathParams parms = null;
 
-			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry))
+			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry, out parms))
 			{
 				if (entry.RouteHandler != null)
 				{
-					ret = entry.RouteHandler(workflowContinuation, context, session);
+					ret = entry.RouteHandler(workflowContinuation, context, session, parms);
 				}
 			}
 

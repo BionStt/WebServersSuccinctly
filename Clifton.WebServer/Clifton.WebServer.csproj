@@ -52,6 +52,7 @@
     <Compile Include="RouteHandler.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="SingleThreadedQueueingHandler.cs" />
+    <Compile Include="PathParams.cs" />
     <Compile Include="Workflow.cs" />
     <Compile Include="WorkflowContinuation.cs" />
     <Compile Include="WorkflowItem.cs" />
