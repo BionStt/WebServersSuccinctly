@@ -40,6 +40,6 @@ namespace Clifton.WebServer
 	public class FileExtensionHandler
 	{
 		public string ContentType { get; set; }
-		public Func<HttpListenerContext, string, string, byte[]> Loader { get; set; }
+		public Action<ContextWrapper, string, string> Loader { get; set; }
 	}
 }

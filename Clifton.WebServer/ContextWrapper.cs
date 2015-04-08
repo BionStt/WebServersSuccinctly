@@ -58,5 +58,13 @@ namespace Clifton.WebServer
 		{
 			Context = context;
 		}
+
+		/// <summary>
+		/// Text or HTML response, suitable for input to a view engine.
+		/// </summary>
+		public void SetPendingResponse(string text)
+		{
+			PendingResponse = new PendingPageResponse() { Html = text };
+		}
 	}
 }

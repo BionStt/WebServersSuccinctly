@@ -48,6 +48,21 @@ namespace ServerApp
 			return ret;
 		}
 
+		/// <summary>
+		/// Final step is to actually issue the response.
+		/// </summary>
+		public static WorkflowState Responder(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
+		{
+			wrapper.Context.Response.ContentEncoding = wrapper.PendingResponse.Encoding;
+			wrapper.Context.Response.ContentType = wrapper.PendingResponse.MimeType;
+			wrapper.Context.Response.ContentLength64 = wrapper.PendingResponse.Data.Length;
+			wrapper.Context.Response.OutputStream.Write(wrapper.PendingResponse.Data, 0, wrapper.PendingResponse.Data.Length);
+			wrapper.Context.Response.StatusCode = 200;			// OK
+			wrapper.Context.Response.OutputStream.Close();
+
+			return WorkflowState.Done;
+		}
+
 		public static void Main(string[] args)
 		{
 			//string externalIP = GetExternalIP();
@@ -74,9 +89,9 @@ namespace ServerApp
 			{
 				RouteHandler = (continuation, wrapper, session, parms) =>
 				{
-					wrapper.Context.RespondWith("<p>p1 = " + parms["p1"] + "</p><p>p2 = " + parms["p2"] + "</p>");
+					wrapper.SetPendingResponse("<p>p1 = " + parms["p1"] + "</p><p>p2 = " + parms["p2"] + "</p>");
 					
-					return WorkflowState.Done;
+					return WorkflowState.Continue;
 				}
 			});
 
@@ -115,9 +130,9 @@ namespace ServerApp
 					},
 				RouteHandler = (continuation, wrapper, session, parms) =>
 					{
-						wrapper.Context.RespondWith("<p>Looking good!</p>");
+						wrapper.SetPendingResponse("<p>Looking good!</p>");
 
-						return WorkflowState.Done;
+						return WorkflowState.Continue;
 					}
 			});
 
@@ -129,11 +144,11 @@ namespace ServerApp
 						Dictionary<string, string> parms = wrapper.Context.GetUrlParameters();
 						session.Expired = GetBooleanState(parms, "Expired", false);
 						session.Authorized = GetBooleanState(parms, "Authorized", false);
-						wrapper.Context.RespondWith(
+						wrapper.SetPendingResponse(
 							"<p>Expired has been set to " + session.Expired + "</p>"+
 							"<p>Authorized has been set to "+session.Authorized + "</p>");
 
-						return WorkflowState.Done;
+						return WorkflowState.Continue;
 					}
 			});
 
@@ -144,7 +159,7 @@ namespace ServerApp
 					{
 						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
 						wrapper.Context.Redirect("Welcome");
-						return WorkflowState.Done;
+						return WorkflowState.Continue;
 					}
 			});
 
@@ -154,8 +169,8 @@ namespace ServerApp
 				RouteHandler = (continuation, wrapper, session, pathParams) =>
 					{
 						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
-						wrapper.Context.RespondWith("Welcome!");
-						return WorkflowState.Done;
+						wrapper.SetPendingResponse("Welcome!");
+						return WorkflowState.Continue;
 					}
 			});
 
@@ -198,6 +213,7 @@ namespace ServerApp
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(Responder));
 		}
 
 		public static string GetWebsitePath()

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Clifton.WebServer
 {
 	/// <summary>
-	/// A renaming of Dictionary.
+	/// A renaming of Dictionary as its own unique type.  No further implementation.
 	/// </summary>
 	public class PathParams : Dictionary<string, string>
 	{

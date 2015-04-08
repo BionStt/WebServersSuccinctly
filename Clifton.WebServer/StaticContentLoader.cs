@@ -67,44 +67,43 @@ namespace Clifton.WebServer
 
 		public WorkflowState GetContent(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
-			// Get the request.
-			HttpListenerRequest request = wrapper.Context.Request;
-			HttpListenerResponse response = wrapper.Context.Response;
-
-			// Get the path, everything up to the first ? and excluding the leading "/"
-			string path = wrapper.Context.Path();
-			string ext = wrapper.Context.Extension();
-
-			// Default to index.html if only the URL is provided with no additional page information.
-			if (String.IsNullOrEmpty(path))
+			// Only try to get the file if we DO NOT have a pending page response that some route handler or other workflow step created.
+			if (wrapper.PendingResponse == null)
 			{
-				path = "index.html";
-				ext = "html";
+				// Get the request.
+				HttpListenerRequest request = wrapper.Context.Request;
+				HttpListenerResponse response = wrapper.Context.Response;
+
+				// Get the path, everything up to the first ? and excluding the leading "/"
+				string path = wrapper.Context.Path();
+				string ext = wrapper.Context.Extension();
+
+				// Default to index.html if only the URL is provided with no additional page information.
+				if (String.IsNullOrEmpty(path))
+				{
+					path = "index.html";
+					ext = "html";
+				}
+
+				if (String.IsNullOrEmpty(ext))
+				{
+					path = path + ".html";
+				}
+
+				path = websitePath + "\\" + path;
+				FileExtensionHandler extHandler;
+
+				if (extensionLoaderMap.TryGetValue(ext, out extHandler))
+				{
+					extHandler.Loader(wrapper, path, ext);
+					wrapper.PendingResponse.MimeType = extHandler.ContentType;
+				}
 			}
 
-			if (String.IsNullOrEmpty(ext))
-			{
-				path = path + ".html";
-			}
-
-			path = websitePath + "\\" + path;
-			FileExtensionHandler extHandler;
-
-			if (extensionLoaderMap.TryGetValue(ext, out extHandler))
-			{
-				byte[] data = extHandler.Loader(wrapper.Context, path, ext);
-				response.ContentEncoding = Encoding.UTF8;
-				wrapper.Context.Response.ContentType = extHandler.ContentType;
-				wrapper.Context.Response.ContentLength64 = data.Length;
-				wrapper.Context.Response.OutputStream.Write(data, 0, data.Length);
-				response.StatusCode = 200;			// OK
-				response.OutputStream.Close();
-			}
-
-			return WorkflowState.Done;
+			return WorkflowState.Continue;
 		}
 
-		public byte[] ImageLoader(HttpListenerContext context, string path, string ext)
+		public void ImageLoader(ContextWrapper context, string path, string ext)
 		{
 			FileStream fStream = new FileStream(path, FileMode.Open, FileAccess.Read);
 			BinaryReader br = new BinaryReader(fStream);
@@ -112,23 +111,21 @@ namespace Clifton.WebServer
 			br.Close();
 			fStream.Close();
 
-			return data;
+			context.PendingResponse = new PendingByteResponse() { Data = data };
 		}
 
-		public byte[] FileLoader(HttpListenerContext context, string path, string ext)
+		public void FileLoader(ContextWrapper context, string path, string ext)
 		{
 			string text = File.ReadAllText(path);
 			byte[] data = Encoding.UTF8.GetBytes(text);
 
-			return data;
+			context.PendingResponse = new PendingFileResponse { Data = data };
 		}
 
-		public byte[] PageLoader(HttpListenerContext context, string path, string ext)
+		public void PageLoader(ContextWrapper context, string path, string ext)
 		{
 			string text = File.ReadAllText(path);
-			byte[] data = Encoding.UTF8.GetBytes(text);
-
-			return data;
+			context.PendingResponse = new PendingPageResponse { Html = text };
 		}
 	}
 }
