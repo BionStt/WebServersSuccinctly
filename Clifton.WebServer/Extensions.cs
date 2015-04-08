@@ -70,5 +70,19 @@ namespace Clifton.WebServer
 			response.StatusCode = 200;
 			response.OutputStream.Close();
 		}
+
+		/// <summary>
+		/// Redirect to the designated page.
+		/// </summary>
+		public static void Redirect(this HttpListenerContext context, string url)
+		{
+			url = url.Replace('\\', '/');
+			HttpListenerRequest request = context.Request;
+			HttpListenerResponse response = context.Response;
+			response.StatusCode = (int)HttpStatusCode.Redirect;
+			string redirectUrl = request.Url.Scheme + "://" + request.Url.Host + "/" + url;
+			response.Redirect(redirectUrl);
+			response.OutputStream.Close();
+		}
 	}
 }

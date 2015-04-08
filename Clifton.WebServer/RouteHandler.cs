@@ -61,7 +61,7 @@ namespace Clifton.WebServer
 			Session session = sessionManager != null ? sessionManager[context] : null;
 			PathParams parms = null;
 
-			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry, out parms))
+			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), context.Request.ContentType, out entry, out parms))
 			{
 				if (entry.RouteHandler != null)
 				{

@@ -50,7 +50,7 @@ namespace Clifton.WebServer
 			this.workflow = workflow;
 			HttpListener listener = new HttpListener();
 			listener.Prefixes.Add("http://localhost/");
-			// listener.Prefixes.Add("https://localhost:443/");
+			listener.Prefixes.Add("https://localhost:443/");
 			listener.Start();
 
 			Task.Run(() => WaitForConnection(listener));

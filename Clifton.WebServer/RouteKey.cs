@@ -34,16 +34,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using Clifton.Extensions;
+
 namespace Clifton.WebServer
 {
 	/// <summary>
 	/// A structure consisting of the verb and path, suitable as a key for the route table entry.
 	/// Key verbs are always converted to uppercase, paths are always converted to lowercase.
 	/// </summary>
-	public struct RouteKey
+	public class RouteKey
 	{
 		private string verb;
 		private string path;
+		private string contentType;
 
 		public string Verb
 		{
@@ -57,9 +60,58 @@ namespace Clifton.WebServer
 			set { path = value.ToLower(); }
 		}
 
+		/// <summary>
+		/// Content type.  The setter will strip off the charset encoding.
+		/// </summary>
+		public string ContentType
+		{
+			get { return contentType; }
+			set { contentType = value.LeftOf(";"); }
+		}
+
+		public RouteKey()
+		{
+			verb = String.Empty;
+			path = String.Empty;
+			contentType = "*";
+		}
+
+		public override bool Equals(object obj)
+		{
+			bool ret=false;
+			RouteKey key=(RouteKey)obj;
+
+			if (contentType == "*")
+			{
+				ret = verb == key.verb && path == key.path;
+			}
+			else
+			{
+				ret = verb == key.verb && path == key.path && contentType == key.contentType;
+			}
+
+			return ret;
+		}
+
+		public override int GetHashCode()
+		{
+			int ret = 0;
+
+			if (contentType == "*")
+			{
+				ret = (verb ?? String.Empty).GetHashCode() ^ (path ?? String.Empty).GetHashCode();
+			}
+			else
+			{
+				ret = (verb ?? String.Empty).GetHashCode() ^ (path ?? String.Empty).GetHashCode() ^ (contentType ?? String.Empty).GetHashCode();
+			}
+
+			return ret;
+		}
+
 		public override string ToString()
 		{
-			return Verb + " : " + Path;
+			return Verb + " : " + Path + contentType.Parens();
 		}
 	}
 }

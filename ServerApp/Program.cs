@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using Clifton.Extensions;
 using Clifton.WebServer;
 
-namespace WorkflowHandler
+namespace ServerApp
 {
 	public class Program
 	{
@@ -69,6 +69,7 @@ namespace WorkflowHandler
 		{
 			RouteTable routeTable = new RouteTable();
 
+			// Test parameterized URL
 			routeTable.AddRoute("get", "param/{p1}/subpage/{p2}", new RouteEntry()
 			{
 				RouteHandler = (continuation, context, session, parms) =>
@@ -79,21 +80,20 @@ namespace WorkflowHandler
 				}
 			});
 
-			routeTable.AddRoute("get", "restricted", new RouteEntry() 
-				{
-					RouteHandler = (continuation, context, session, parms) => 
-					{
-						throw new ApplicationException("You can't do that."); 
-					} 
-				});
-			
+			// Example usage where we re-use the expirable session and authorization checks.
+			// routeTable.AddExpirableRoute("get", "somepath", myRouteHandler);
+			// routeTable.AddExpirableAuthorizedRoute("get", "someotherpath", myRouteHandler);
+
+			// Test session expired and authorization flags			
 			routeTable.AddRoute("get", "testsession", new RouteEntry()
 			{
 				SessionExpirationHandler = (continuation, context, session, parms) =>
 					{
 						if (session.Expired)
 						{
-							throw new ApplicationException("Session has expired!");
+							// Redirect instead of throwing an exception.
+							context.Redirect(@"ErrorPages\expiredSession");
+							return WorkflowState.Abort;
 						}
 						else
 						{
@@ -104,7 +104,9 @@ namespace WorkflowHandler
 					{
 						if (!session.Authorized)
 						{
-							throw new ApplicationException("Not authorized!");
+							// Redirect instead of throwing an exception.
+							context.Redirect(@"ErrorPages\notAuthorized");
+							return WorkflowState.Abort;
 						}
 						else
 						{
@@ -119,6 +121,7 @@ namespace WorkflowHandler
 					}
 			});
 
+			// Set the session expired and authorization flags for testing purposes.
 			routeTable.AddRoute("get", "SetState", new RouteEntry()
 			{
 				RouteHandler = (continuation, context, session, pathParams) =>
@@ -132,6 +135,28 @@ namespace WorkflowHandler
 
 						return WorkflowState.Done;
 					}
+			});
+
+			// Test a form post
+			routeTable.AddRoute("post", "login", "application/x-www-form-urlencoded", new RouteEntry()
+			{
+				RouteHandler = (continuation, context, session, pathParams) =>
+					{
+						string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
+						context.Redirect("welcome");
+						return WorkflowState.Done;
+					}
+			});
+
+			// Test a form post with JSON content
+			routeTable.AddRoute("post", "login", "application/json; charset=UTF-8", new RouteEntry()
+			{
+				RouteHandler = (continuation, context, session, pathParams) =>
+				{
+					string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
+					context.RespondWith("Welcome!");
+					return WorkflowState.Done;
+				}
 			});
 
 			return routeTable;
@@ -204,14 +229,16 @@ namespace WorkflowHandler
 
 		static void OnException(HttpListenerContext context, Exception ex)
 		{
-			HttpListenerResponse response = context.Response;
-			response.ContentEncoding = Encoding.UTF8;
-			context.Response.ContentType = "text/html";
-			byte[] data = Encoding.UTF8.GetBytes(ex.Message);
-			context.Response.ContentLength64 = data.Length;
-			context.Response.OutputStream.Write(data, 0, data.Length);
-			response.StatusCode = 200;			// OK
-			response.OutputStream.Close();
+			if (ex is FileNotFoundException)
+			{
+				// Redirect to page not found
+				context.Redirect(@"ErrorPages\pageNotFound");
+			}
+			else
+			{
+				// Redirect to server error
+				context.Redirect(@"ErrorPages\serverError");
+			}
 		}
 
 		public static string GetExternalIP()

@@ -61,9 +61,9 @@ namespace Clifton.WebServer
 		/// <summary>
 		/// True if the routing table contains the verb-path key.
 		/// </summary>
-		public bool Contains(string verb, string path)
+		public bool Contains(string verb, string path, string contentType = "*")
 		{
-			RouteEntry entry = Parse(NewKey(verb, path), new PathParams());
+			RouteEntry entry = Parse(NewKey(verb, path, contentType), new PathParams());
 
 			return entry != null;
 		}
@@ -82,6 +82,14 @@ namespace Clifton.WebServer
 		public void AddRoute(string verb, string path, RouteEntry route)
 		{
 			AddRoute(NewKey(verb, path), route);
+		}
+
+		/// <summary>
+		/// Adds a unique route.
+		/// </summary>
+		public void AddRoute(string verb, string path, string contentType, RouteEntry route)
+		{
+			AddRoute(NewKey(verb, path, contentType), route);
 		}
 
 		/// <summary>
@@ -111,6 +119,15 @@ namespace Clifton.WebServer
 		}
 
 		/// <summary>
+		/// Get the route entry for the verb and path including any path parameters.
+		/// Throws an exception if the route isn't found.
+		/// </summary>
+		public RouteEntry GetRouteEntry(string verb, string path, string contentType, out PathParams parms)
+		{
+			return GetRouteEntry(NewKey(verb, path, contentType), out parms);
+		}
+
+		/// <summary>
 		/// Returns true and populates the route entry and path parameters if the key exists.
 		/// </summary>
 		public bool TryGetRouteEntry(RouteKey key, out RouteEntry entry, out PathParams parms)
@@ -133,11 +150,22 @@ namespace Clifton.WebServer
 		}
 
 		/// <summary>
+		/// Returns true and populates the route entry and path parameters if the key exists.
+		/// </summary>
+		public bool TryGetRouteEntry(string verb, string path, string contentType, out RouteEntry entry, out PathParams parms)
+		{
+			parms = new PathParams();
+			entry = Parse(NewKey(verb, path, contentType), parms);
+
+			return entry != null;
+		}
+
+		/// <summary>
 		/// Create a RouteKey given the verb and path.
 		/// </summary>
-		public RouteKey NewKey(string verb, string path)
+		public RouteKey NewKey(string verb, string path, string contentType = "*")
 		{
-			return new RouteKey() { Verb = verb, Path = path };
+			return new RouteKey() { Verb = verb, Path = path, ContentType=contentType };
 		}
 
 		/// <summary>
@@ -158,8 +186,8 @@ namespace Clifton.WebServer
 
 				foreach (KeyValuePair<RouteKey, RouteEntry> route in routes)
 				{
-					// Above all else, verbs must match.
-					if (route.Key.Verb == key.Verb)
+					// Above all else, verbs and, if not wildcarded, content type must match.
+					if ( (route.Key.Verb == key.Verb) && ( (route.Key.ContentType=="*") || (route.Key.ContentType==key.ContentType)) )
 					{
 						string[] routeSegments = route.Key.Path.Split('/');
 

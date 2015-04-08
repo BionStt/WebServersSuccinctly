@@ -58,8 +58,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Website\ajaxlogin.html" />
+    <Content Include="Website\CSS\demo.css" />
+    <Content Include="Website\ErrorPages\expiredSession.html" />
+    <Content Include="Website\ErrorPages\fileNotFound.html" />
+    <Content Include="Website\ErrorPages\notAuthorized.html" />
+    <Content Include="Website\ErrorPages\pageNotFound.html" />
+    <Content Include="Website\ErrorPages\serverError.html" />
     <Content Include="Website\favicon.ico" />
     <Content Include="Website\index.html" />
+    <Content Include="Website\login.html" />
+    <Content Include="Website\Scripts\jquery-1.11.2.min.js" />
+    <Content Include="Website\welcome.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

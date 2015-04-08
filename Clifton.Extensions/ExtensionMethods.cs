@@ -590,6 +590,14 @@ namespace Clifton.Extensions
 			return "{" + src + "}";
 		}
 
+		/// <summary>
+		/// Returns a new string surrounded by brackets.
+		/// </summary>
+		public static string Parens(this String src)
+		{
+			return "(" + src + ")";
+		}
+
 		public static string Between(this String src, char c1, char c2)
 		{
 			return StringHelpers.Between(src, c1, c2);
