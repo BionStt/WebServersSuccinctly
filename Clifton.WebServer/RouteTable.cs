@@ -165,7 +165,7 @@ namespace Clifton.WebServer
 		/// </summary>
 		public RouteKey NewKey(string verb, string path, string contentType = "*")
 		{
-			return new RouteKey() { Verb = verb, Path = path, ContentType=contentType };
+			return new RouteKey() { Verb = verb, Path = path, ContentType = contentType };
 		}
 
 		/// <summary>

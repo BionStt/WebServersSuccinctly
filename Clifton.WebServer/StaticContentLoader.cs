@@ -65,15 +65,15 @@ namespace Clifton.WebServer
 			};
 		}
 
-		public WorkflowState GetContent(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public WorkflowState GetContent(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
 			// Get the request.
-			HttpListenerRequest request = context.Request;
-			HttpListenerResponse response = context.Response;
+			HttpListenerRequest request = wrapper.Context.Request;
+			HttpListenerResponse response = wrapper.Context.Response;
 
 			// Get the path, everything up to the first ? and excluding the leading "/"
-			string path = context.Path();
-			string ext = context.Extension();
+			string path = wrapper.Context.Path();
+			string ext = wrapper.Context.Extension();
 
 			// Default to index.html if only the URL is provided with no additional page information.
 			if (String.IsNullOrEmpty(path))
@@ -92,11 +92,11 @@ namespace Clifton.WebServer
 
 			if (extensionLoaderMap.TryGetValue(ext, out extHandler))
 			{
-				byte[] data = extHandler.Loader(context, path, ext);
+				byte[] data = extHandler.Loader(wrapper.Context, path, ext);
 				response.ContentEncoding = Encoding.UTF8;
-				context.Response.ContentType = extHandler.ContentType;
-				context.Response.ContentLength64 = data.Length;
-				context.Response.OutputStream.Write(data, 0, data.Length);
+				wrapper.Context.Response.ContentType = extHandler.ContentType;
+				wrapper.Context.Response.ContentLength64 = data.Length;
+				wrapper.Context.Response.OutputStream.Write(data, 0, data.Length);
 				response.StatusCode = 200;			// OK
 				response.OutputStream.Close();
 			}

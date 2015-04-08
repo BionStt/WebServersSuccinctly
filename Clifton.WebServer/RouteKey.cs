@@ -66,7 +66,7 @@ namespace Clifton.WebServer
 		public string ContentType
 		{
 			get { return contentType; }
-			set { contentType = value.LeftOf(";"); }
+			set { contentType = value == null ? String.Empty : value.LeftOf(";"); }
 		}
 
 		public RouteKey()
@@ -99,11 +99,11 @@ namespace Clifton.WebServer
 
 			if (contentType == "*")
 			{
-				ret = (verb ?? String.Empty).GetHashCode() ^ (path ?? String.Empty).GetHashCode();
+				ret = verb.GetHashCode() ^ path.GetHashCode();
 			}
 			else
 			{
-				ret = (verb ?? String.Empty).GetHashCode() ^ (path ?? String.Empty).GetHashCode() ^ (contentType ?? String.Empty).GetHashCode();
+				ret = verb.GetHashCode() ^ path.GetHashCode() ^ contentType.GetHashCode();
 			}
 
 			return ret;

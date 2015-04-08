@@ -21,7 +21,7 @@ namespace ServerApp
 	public class Program
 	{
 		public static IRequestHandler requestHandler;
-		public static Workflow<HttpListenerContext> workflow;
+		public static Workflow<ContextWrapper> workflow;
 		public static RouteHandler routeHandler;
 		public static RouteTable routeTable;
 		public static SessionManager sessionManager;
@@ -29,9 +29,9 @@ namespace ServerApp
 		/// <summary>
 		/// A workflow item, implementing a simple instrumentation of the client IP address, port, and URL.
 		/// </summary>
-		public static WorkflowState LogIPAddress(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public static WorkflowState LogIPAddress(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
-			Console.WriteLine(context.Request.RemoteEndPoint.ToString() + " : " + context.Request.RawUrl);
+			Console.WriteLine(wrapper.Context.Request.RemoteEndPoint.ToString() + " : " + wrapper.Context.Request.RawUrl);
 
 			return WorkflowState.Continue;
 		}
@@ -39,9 +39,9 @@ namespace ServerApp
 		/// <summary>
 		/// Only intranet IP addresses are allowed.
 		/// </summary>
-		public static WorkflowState WhiteList(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public static WorkflowState WhiteList(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
-			string url = context.Request.RemoteEndPoint.ToString();
+			string url = wrapper.Context.Request.RemoteEndPoint.ToString();
 			bool valid = url.StartsWith("192.168") || url.StartsWith("127.0.0.1");
 			WorkflowState ret = valid ? WorkflowState.Continue : WorkflowState.Abort;
 
@@ -72,9 +72,9 @@ namespace ServerApp
 			// Test parameterized URL
 			routeTable.AddRoute("get", "param/{p1}/subpage/{p2}", new RouteEntry()
 			{
-				RouteHandler = (continuation, context, session, parms) =>
+				RouteHandler = (continuation, wrapper, session, parms) =>
 				{
-					context.RespondWith("<p>p1 = " + parms["p1"] + "</p><p>p2 = " + parms["p2"] + "</p>");
+					wrapper.Context.RespondWith("<p>p1 = " + parms["p1"] + "</p><p>p2 = " + parms["p2"] + "</p>");
 					
 					return WorkflowState.Done;
 				}
@@ -87,12 +87,12 @@ namespace ServerApp
 			// Test session expired and authorization flags			
 			routeTable.AddRoute("get", "testsession", new RouteEntry()
 			{
-				SessionExpirationHandler = (continuation, context, session, parms) =>
+				SessionExpirationHandler = (continuation, wrapper, session, parms) =>
 					{
 						if (session.Expired)
 						{
 							// Redirect instead of throwing an exception.
-							context.Redirect(@"ErrorPages\expiredSession");
+							wrapper.Context.Redirect(@"ErrorPages\expiredSession");
 							return WorkflowState.Abort;
 						}
 						else
@@ -100,12 +100,12 @@ namespace ServerApp
 							return WorkflowState.Continue;
 						}
 					},
-				AuthorizationHandler = (continuation, context, session, parms) =>
+				AuthorizationHandler = (continuation, wrapper, session, parms) =>
 					{
 						if (!session.Authorized)
 						{
 							// Redirect instead of throwing an exception.
-							context.Redirect(@"ErrorPages\notAuthorized");
+							wrapper.Context.Redirect(@"ErrorPages\notAuthorized");
 							return WorkflowState.Abort;
 						}
 						else
@@ -113,9 +113,9 @@ namespace ServerApp
 							return WorkflowState.Continue;
 						}
 					},
-				RouteHandler = (continuation, context, session, parms) =>
+				RouteHandler = (continuation, wrapper, session, parms) =>
 					{
-						context.RespondWith("<p>Looking good!</p>");
+						wrapper.Context.RespondWith("<p>Looking good!</p>");
 
 						return WorkflowState.Done;
 					}
@@ -124,12 +124,12 @@ namespace ServerApp
 			// Set the session expired and authorization flags for testing purposes.
 			routeTable.AddRoute("get", "SetState", new RouteEntry()
 			{
-				RouteHandler = (continuation, context, session, pathParams) =>
+				RouteHandler = (continuation, wrapper, session, pathParams) =>
 					{
-						Dictionary<string, string> parms = context.GetUrlParameters();
+						Dictionary<string, string> parms = wrapper.Context.GetUrlParameters();
 						session.Expired = GetBooleanState(parms, "Expired", false);
 						session.Authorized = GetBooleanState(parms, "Authorized", false);
-						context.RespondWith(
+						wrapper.Context.RespondWith(
 							"<p>Expired has been set to " + session.Expired + "</p>"+
 							"<p>Authorized has been set to "+session.Authorized + "</p>");
 
@@ -140,10 +140,10 @@ namespace ServerApp
 			// Test a form post
 			routeTable.AddRoute("post", "login", "application/x-www-form-urlencoded", new RouteEntry()
 			{
-				RouteHandler = (continuation, context, session, pathParams) =>
+				RouteHandler = (continuation, wrapper, session, pathParams) =>
 					{
-						string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
-						context.Redirect("welcome");
+						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
+						wrapper.Context.Redirect("Welcome");
 						return WorkflowState.Done;
 					}
 			});
@@ -151,12 +151,12 @@ namespace ServerApp
 			// Test a form post with JSON content
 			routeTable.AddRoute("post", "login", "application/json; charset=UTF-8", new RouteEntry()
 			{
-				RouteHandler = (continuation, context, session, pathParams) =>
-				{
-					string data = new StreamReader(context.Request.InputStream, context.Request.ContentEncoding).ReadToEnd();
-					context.RespondWith("Welcome!");
-					return WorkflowState.Done;
-				}
+				RouteHandler = (continuation, wrapper, session, pathParams) =>
+					{
+						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
+						wrapper.Context.RespondWith("Welcome!");
+						return WorkflowState.Done;
+					}
 			});
 
 			return routeTable;
@@ -191,13 +191,13 @@ namespace ServerApp
 		public static void InitializeWorkflow(string websitePath)
 		{
 			StaticContentLoader sph = new StaticContentLoader(websitePath);
-			workflow = new Workflow<HttpListenerContext>(AbortHandler, OnException);
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(LogIPAddress));
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(WhiteList));
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(sessionManager.Provider));
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(requestHandler.Process));
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(routeHandler.Route));
-			workflow.AddItem(new WorkflowItem<HttpListenerContext>(sph.GetContent));
+			workflow = new Workflow<ContextWrapper>(AbortHandler, OnException);
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(LogIPAddress));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(WhiteList));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
 		}
 
 		public static string GetWebsitePath()
@@ -221,23 +221,23 @@ namespace ServerApp
 			return websitePath;
 		}
 
-		static void AbortHandler(HttpListenerContext context)
+		static void AbortHandler(ContextWrapper wrapper)
 		{
-			HttpListenerResponse response = context.Response;
+			HttpListenerResponse response = wrapper.Context.Response;
 			response.OutputStream.Close();
 		}
 
-		static void OnException(HttpListenerContext context, Exception ex)
+		static void OnException(ContextWrapper wrapper, Exception ex)
 		{
 			if (ex is FileNotFoundException)
 			{
 				// Redirect to page not found
-				context.Redirect(@"ErrorPages\pageNotFound");
+				wrapper.Context.Redirect(@"ErrorPages\pageNotFound");
 			}
 			else
 			{
 				// Redirect to server error
-				context.Redirect(@"ErrorPages\serverError");
+				wrapper.Context.Redirect(@"ErrorPages\serverError");
 			}
 		}
 

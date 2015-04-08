@@ -37,6 +37,6 @@ namespace Clifton.WebServer
 		/// <summary>
 		/// A workflow item implementing the HttpListenerContext handler.
 		/// </summary>
-		WorkflowState Process(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context);
+		WorkflowState Process(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper context);
 	}
 }

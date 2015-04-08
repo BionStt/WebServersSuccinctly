@@ -54,18 +54,18 @@ namespace Clifton.WebServer
 		/// <summary>
 		/// Route the request.  If no route exists, the workflow continues, otherwise, we return the route handler's continuation state.
 		/// </summary>
-		public WorkflowState Route(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public WorkflowState Route(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
 			WorkflowState ret = WorkflowState.Continue;
 			RouteEntry entry = null;
-			Session session = sessionManager != null ? sessionManager[context] : null;
+			Session session = sessionManager != null ? sessionManager[wrapper.Context] : null;
 			PathParams parms = null;
 
-			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), context.Request.ContentType, out entry, out parms))
+			if (routeTable.TryGetRouteEntry(wrapper.Context.Verb(), wrapper.Context.Path(), wrapper.Context.Request.ContentType, out entry, out parms))
 			{
 				if (entry.RouteHandler != null)
 				{
-					ret = entry.RouteHandler(workflowContinuation, context, session, parms);
+					ret = entry.RouteHandler(workflowContinuation, wrapper, session, parms);
 				}
 			}
 

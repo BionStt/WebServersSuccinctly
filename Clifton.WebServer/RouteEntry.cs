@@ -42,8 +42,8 @@ namespace Clifton.WebServer
 	/// </summary>
 	public class RouteEntry
 	{
-		public Func<WorkflowContinuation<HttpListenerContext>, HttpListenerContext, Session, PathParams, WorkflowState> SessionExpirationHandler;
-		public Func<WorkflowContinuation<HttpListenerContext>, HttpListenerContext, Session, PathParams, WorkflowState> AuthorizationHandler;
-		public Func<WorkflowContinuation<HttpListenerContext>, HttpListenerContext, Session, PathParams, WorkflowState> RouteHandler;
+		public Func<WorkflowContinuation<ContextWrapper>, ContextWrapper, Session, PathParams, WorkflowState> SessionExpirationHandler;
+		public Func<WorkflowContinuation<ContextWrapper>, ContextWrapper, Session, PathParams, WorkflowState> AuthorizationHandler;
+		public Func<WorkflowContinuation<ContextWrapper>, ContextWrapper, Session, PathParams, WorkflowState> RouteHandler;
 	}
 }

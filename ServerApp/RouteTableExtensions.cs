@@ -16,8 +16,8 @@ namespace ServerApp
 		/// </summary>
 		public static void AddExpirableRoute(this RouteTable routeTable, 
 			string verb, 
-			string path, 
-			Func<WorkflowContinuation<HttpListenerContext>, HttpListenerContext, Session, PathParams, WorkflowState> routeHandler)
+			string path,
+			Func<WorkflowContinuation<ContextWrapper>, ContextWrapper, Session, PathParams, WorkflowState> routeHandler)
 		{
 			routeTable.AddRoute(verb, path, new RouteEntry()
 			{
@@ -36,7 +36,7 @@ namespace ServerApp
 		public static void AddExpirableAuthorizedRoute(this RouteTable routeTable,
 			string verb,
 			string path,
-			Func<WorkflowContinuation<HttpListenerContext>, HttpListenerContext, Session, PathParams, WorkflowState> routeHandler)
+			Func<WorkflowContinuation<ContextWrapper>, ContextWrapper, Session, PathParams, WorkflowState> routeHandler)
 		{
 			routeTable.AddRoute(verb, path, new RouteEntry()
 			{

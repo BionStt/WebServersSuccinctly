@@ -16,10 +16,11 @@
                     async: true,
                     cache: false,
                     type: "post",
-                    data: {
+                    contentType: "application/json",
+                    data: JSON.stringify({
                         username: $("#username").val(),
                         password: $("#password").val()
-                    },
+                    }),
                     success: function (data, status) {
                         alert(data);
                     }

@@ -42,9 +42,9 @@ namespace Clifton.WebServer
 	public class Server
 	{
 		protected IRequestHandler handler;
-		protected Workflow<HttpListenerContext> workflow;
+		protected Workflow<ContextWrapper> workflow;
 
-		public void Start(IRequestHandler handler, Workflow<HttpListenerContext> workflow)
+		public void Start(IRequestHandler handler, Workflow<ContextWrapper> workflow)
 		{
 			this.handler = handler;
 			this.workflow = workflow;
@@ -64,9 +64,10 @@ namespace Clifton.WebServer
 			{
 				// Wait for a connection.  Return to caller while we wait.
 				HttpListenerContext context = listener.GetContext();
+				ContextWrapper contextWrapper = new ContextWrapper(context);
 
 				// Create a local workflow instance associated with the workflow for this request.
-				workflow.Execute(context);
+				workflow.Execute(contextWrapper);
 			}
 		}
 	}

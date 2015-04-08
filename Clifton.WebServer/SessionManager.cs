@@ -67,10 +67,10 @@ namespace Clifton.WebServer
 			ExpireInSeconds = 10 * 60;
 		}
 
-		public WorkflowState Provider(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public WorkflowState Provider(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
 			Session session;
-			IPAddress endpointAddress = context.EndpointAddress();
+			IPAddress endpointAddress = wrapper.Context.EndpointAddress();
 
 			if (!sessionMap.TryGetValue(endpointAddress, out session))
 			{
@@ -86,7 +86,7 @@ namespace Clifton.WebServer
 			}
 
 			session.UpdateLastConnectionTime();
-			WorkflowState ret = CheckExpirationAndAuthorization(workflowContinuation, context, session);
+			WorkflowState ret = CheckExpirationAndAuthorization(workflowContinuation, wrapper, session);
 
 			return ret;
 		}
@@ -96,25 +96,25 @@ namespace Clifton.WebServer
 			sessionMap.Values.Where(s => s.IsExpired(deadAfterSeconds)).ForEach(s => sessionMap.Remove(s.EndpointAddress));
 		}
 
-		protected WorkflowState CheckExpirationAndAuthorization(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context, Session session)
+		protected WorkflowState CheckExpirationAndAuthorization(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper, Session session)
 		{
 			// Inspect the route to see if we should do session expiration and/or session authorization checks.
 			WorkflowState ret = WorkflowState.Continue;
 			RouteEntry entry = null;
 			PathParams parms = null;
 
-			if (routeTable.TryGetRouteEntry(context.Verb(), context.Path(), out entry, out parms))
+			if (routeTable.TryGetRouteEntry(wrapper.Context.Verb(), wrapper.Context.Path(), out entry, out parms))
 			{
 				if (entry.SessionExpirationHandler != null)
 				{
-					ret = entry.SessionExpirationHandler(workflowContinuation, context, session, parms);
+					ret = entry.SessionExpirationHandler(workflowContinuation, wrapper, session, parms);
 				}
 
 				if (ret == WorkflowState.Continue)
 				{
 					if (entry.AuthorizationHandler != null)
 					{
-						ret = entry.AuthorizationHandler(workflowContinuation, context, session, parms);
+						ret = entry.AuthorizationHandler(workflowContinuation, wrapper, session, parms);
 					}
 				}
 			}

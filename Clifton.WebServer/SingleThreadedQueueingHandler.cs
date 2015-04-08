@@ -72,13 +72,13 @@ namespace Clifton.WebServer
 
 	public class WorkflowContext
 	{
-		protected WorkflowContinuation<HttpListenerContext> workflowContinuation;
-		protected HttpListenerContext context;
+		protected WorkflowContinuation<ContextWrapper> workflowContinuation;
+		protected ContextWrapper context;
 
-		public WorkflowContinuation<HttpListenerContext> WorkflowContinuation { get { return workflowContinuation; } }
-		public HttpListenerContext Context { get { return context; } }
+		public WorkflowContinuation<ContextWrapper> WorkflowContinuation { get { return workflowContinuation; } }
+		public ContextWrapper Context { get { return context; } }
 
-		public WorkflowContext(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public WorkflowContext(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper context)
 		{
 			this.workflowContinuation = workflowContinuation;
 			this.context = context;
@@ -121,9 +121,9 @@ namespace Clifton.WebServer
 		}
 
 		/// <summary>
-		/// A workflow item implementing the HttpListenerContext handler.
+		/// A workflow item implementing the ContextWrapper handler.
 		/// </summary>
-		public WorkflowState Process(WorkflowContinuation<HttpListenerContext> workflowContinuation, HttpListenerContext context)
+		public WorkflowState Process(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper context)
 		{
 			// Create a workflow context and queue it.
 			requests.Enqueue(new WorkflowContext(workflowContinuation, context));
