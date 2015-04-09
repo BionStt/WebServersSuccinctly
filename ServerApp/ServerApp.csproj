@@ -32,8 +32,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="RazorEngine">
+      <HintPath>..\libs\RazorEngine.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web.Razor, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\libs\System.Web.Razor.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -69,6 +76,8 @@
     <Content Include="Website\favicon.ico" />
     <Content Include="Website\index.html" />
     <Content Include="Website\login.html" />
+    <Content Include="Website\mvpList.html" />
+    <Content Include="Website\razorTest.html" />
     <Content Include="Website\Scripts\jquery-1.11.2.min.js" />
     <Content Include="Website\welcome.html" />
   </ItemGroup>

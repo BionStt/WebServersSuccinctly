@@ -8,18 +8,76 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Security;
+using System.Security.Permissions;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+
+using RazorEngine;
+using RazorEngine.Templating;
 
 using Clifton.Extensions;
 using Clifton.WebServer;
 
 namespace ServerApp
 {
+	public class Person
+	{
+		public string Name {get;set;}
+
+		public Person(string name)
+		{
+			Name=name;
+		}
+	}
+
 	public class Program
 	{
+		public static List<Person> codeProject2015Mvp = new List<Person>()
+		{
+ 			new Person("Christian Graus"),
+ 			new Person("BillWoodruff"),
+ 			new Person("Richard Deeming"),
+ 			new Person("Marc Clifton"),
+ 			new Person("George Mamaladze"),
+ 			new Person("Pete O'Hanlon"),
+ 			new Person("Dave Kreskowiak"),
+ 			new Person("Raul Iloc"),
+ 			new Person("Sacha Barber"),
+ 			new Person("Maciej Los"),
+ 			new Person("Richard MacCutchan"),
+ 			new Person("Shivprasad koirala"),
+ 			new Person("CPallini"),
+ 			new Person("Sergey Alexandrovich Kryukov"),
+ 			new Person("syed shanu"),
+ 			new Person("RyanDev"),
+ 			new Person("Kornfeld Eliyahu Peter"),
+ 			new Person("Shemeer NS"),
+ 			new Person("Florian Rappl"),
+ 			new Person("Ranjan.D"),
+ 			new Person("Rahul Rajat Singh"),
+ 			new Person("Dave Kerr"),
+ 			new Person("Mahsa Hassankashi"),
+ 			new Person("Abhinav S"),
+ 			new Person("Peter Leow"),
+ 			new Person("CHill60"),
+ 			new Person("Dr. Song Li"),
+ 			new Person("Marla Sukesh"),
+ 			new Person("Paulo Zemek"),
+ 			new Person("OriginalGriff"),
+ 			new Person("KARTHIK Bangalore"),
+ 			new Person("thatraja"),
+ 			new Person("adriancs"),
+ 			new Person("Akhil Mittal"),
+ 			new Person("Azim Zahir"),
+ 			new Person("Tadit Dash (ତଡିତ୍ କୁମାର ଦାଶ)"),
+ 			new Person("Dnyaneshwar@Pune"),
+ 			new Person("DamithSL"),
+ 			new Person("Snesh Prajapati"),
+ 			new Person("Debopam Pal"),
+};
 		public static IRequestHandler requestHandler;
 		public static Workflow<ContextWrapper> workflow;
 		public static RouteHandler routeHandler;
@@ -60,11 +118,54 @@ namespace ServerApp
 			wrapper.Context.Response.StatusCode = 200;			// OK
 			wrapper.Context.Response.OutputStream.Close();
 
-			return WorkflowState.Done;
+			return WorkflowState.Continue;
 		}
 
-		public static void Main(string[] args)
+		/// <summary>
+		/// Apply the Razor view engine to a page response.
+		/// </summary>
+		public static WorkflowState ViewEngine(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
+			PendingPageResponse pageResponse = wrapper.PendingResponse as PendingPageResponse;
+			
+			// Only send page responses to the templating engine.
+			if (pageResponse != null)
+			{
+				string html = pageResponse.Html;
+				string templateKey = html.GetHashCode().ToString();
+				// pageResponse.Html = Engine.Razor.RunCompile(html, templateKey, null, new { /* your dynamic model */ });
+				try
+				{
+					pageResponse.Html = Engine.Razor.RunCompile(html, templateKey, null, new { People = codeProject2015Mvp });
+				}
+				catch (Exception ex)
+				{
+					// Helps with debugging runtime compilation errors!
+				}
+			}
+
+			return WorkflowState.Continue;
+		}
+
+		static void Main(string[] args)
+		{
+			if (AppDomain.CurrentDomain.IsDefaultAppDomain())
+			{
+				Console.WriteLine("Switching to secound AppDomain, for RazorEngine...");
+				AppDomainSetup adSetup = new AppDomainSetup();
+				adSetup.ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+				var current = AppDomain.CurrentDomain;
+				var domain = AppDomain.CreateDomain("MyMainDomain", null, current.SetupInformation, new PermissionSet(PermissionState.Unrestricted), null);
+				var exitCode = domain.ExecuteAssembly(Assembly.GetExecutingAssembly().Location);
+
+				// RazorEngine will cleanup. 
+				AppDomain.Unload(domain);
+
+				return;
+			}
+
+			// Continue with our sever initialization...
+
 			//string externalIP = GetExternalIP();
 			//Console.WriteLine("External IP: " + externalIP);
 			requestHandler = new SingleThreadedQueueingHandler();
@@ -159,7 +260,9 @@ namespace ServerApp
 					{
 						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
 						wrapper.Context.Redirect("Welcome");
-						return WorkflowState.Continue;
+
+						// As a redirect, we don't want any downstream processing.
+						return WorkflowState.Done;
 					}
 			});
 
@@ -169,8 +272,10 @@ namespace ServerApp
 				RouteHandler = (continuation, wrapper, session, pathParams) =>
 					{
 						string data = new StreamReader(wrapper.Context.Request.InputStream, wrapper.Context.Request.ContentEncoding).ReadToEnd();
-						wrapper.SetPendingResponse("Welcome!");
-						return WorkflowState.Continue;
+						wrapper.Context.RespondWith("Welcome!");
+
+						// As an AJAX response, we don't want any downstream processing.
+						return WorkflowState.Done;
 					}
 			});
 
@@ -213,6 +318,7 @@ namespace ServerApp
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(ViewEngine));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(Responder));
 		}
 
