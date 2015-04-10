@@ -147,6 +147,23 @@ namespace ServerApp
 			return WorkflowState.Continue;
 		}
 
+		public static WorkflowState CsrfInjector(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
+		{
+			PendingPageResponse pageResponse = wrapper.PendingResponse as PendingPageResponse;
+			if (pageResponse != null)
+			{
+				// For form postbacks.
+				pageResponse.Html = pageResponse.Html.Replace("%AntiForgeryToken%", "<input name=" + "csrf".SingleQuote() +
+				" type='hidden' value=" + wrapper.Session["_CSRF_"].ToString().SingleQuote() +
+				" id='__csrf__'/>");
+
+				// For AJAX calls where the CSRF is in the RequestVerificationToken header:
+				pageResponse.Html = pageResponse.Html.Replace("%CsrfValue%", wrapper.Session["_CSRF_"].ToString().SingleQuote());
+			}
+
+			return WorkflowState.Continue;
+		}
+
 		static void Main(string[] args)
 		{
 			if (AppDomain.CurrentDomain.IsDefaultAppDomain())
@@ -318,7 +335,7 @@ namespace ServerApp
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(ViewEngine));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(CsrfInjector));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(Responder));
 		}
 

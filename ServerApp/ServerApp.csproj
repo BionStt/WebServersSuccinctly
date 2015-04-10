@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Website\ajaxlogin.html" />
+    <Content Include="Website\csrflogin.html" />
     <Content Include="Website\CSS\demo.css" />
     <Content Include="Website\ErrorPages\expiredSession.html" />
     <Content Include="Website\ErrorPages\fileNotFound.html" />

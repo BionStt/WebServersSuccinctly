@@ -85,6 +85,8 @@ namespace Clifton.WebServer
 				session.Expired |= session.IsExpired(ExpireInSeconds);
 			}
 
+			wrapper.Session = session;
+
 			session.UpdateLastConnectionTime();
 			WorkflowState ret = CheckExpirationAndAuthorization(workflowContinuation, wrapper, session);
 

@@ -53,6 +53,7 @@ namespace Clifton.WebServer
 	{
 		public HttpListenerContext Context { get; protected set; }
 		public Response PendingResponse { get; set; }
+		public Session Session { get; set; }
 
 		public ContextWrapper(HttpListenerContext context)
 		{
