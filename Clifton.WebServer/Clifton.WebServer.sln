@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clifton.Extensions", "..\Cl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Clifton.Utils", "..\Clifton.Utils\Clifton.Utils.csproj", "{8AEB902F-7D12-4DE0-8797-46A8C2842F62}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerformanceTester", "..\PerformanceTester\PerformanceTester.csproj", "{84EF81A7-4836-48DB-AA62-006CCA6DC079}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,6 +33,10 @@ Global
 		{8AEB902F-7D12-4DE0-8797-46A8C2842F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8AEB902F-7D12-4DE0-8797-46A8C2842F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8AEB902F-7D12-4DE0-8797-46A8C2842F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84EF81A7-4836-48DB-AA62-006CCA6DC079}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84EF81A7-4836-48DB-AA62-006CCA6DC079}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84EF81A7-4836-48DB-AA62-006CCA6DC079}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84EF81A7-4836-48DB-AA62-006CCA6DC079}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

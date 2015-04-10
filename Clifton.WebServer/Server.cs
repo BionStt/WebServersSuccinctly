@@ -41,19 +41,40 @@ namespace Clifton.WebServer
 {
 	public class Server
 	{
+		public static StringBuilder log = new StringBuilder();
+
 		protected IRequestHandler handler;
 		protected Workflow<ContextWrapper> workflow;
+		protected HttpListener listener;
 
 		public void Start(IRequestHandler handler, Workflow<ContextWrapper> workflow)
 		{
 			this.handler = handler;
 			this.workflow = workflow;
-			HttpListener listener = new HttpListener();
+			listener = new HttpListener();
+			listener.Prefixes.Add("http://192.168.1.21/");
 			listener.Prefixes.Add("http://localhost/");
 			listener.Prefixes.Add("https://localhost:443/");
 			listener.Start();
 
 			Task.Run(() => WaitForConnection(listener));
+			//for (int i = 0; i < 500; i++)
+			//{
+			//	IAsyncResult result = listener.BeginGetContext(new AsyncCallback(WebRequestCallback), listener);
+			//}
+		}
+
+		// http://weblog.west-wind.com/posts/2005/Dec/04/Add-a-Web-Server-to-your-NET-20-app-with-a-few-lines-of-code
+		protected void WebRequestCallback(IAsyncResult result)
+		{
+			// Get out the context object
+			HttpListenerContext context = listener.EndGetContext(result);
+			// *** Immediately set up the next context
+			listener.BeginGetContext(new AsyncCallback(WebRequestCallback), listener);
+			ContextWrapper contextWrapper = new ContextWrapper(context);
+
+			// Create a local workflow instance associated with the workflow for this request.
+			workflow.Execute(contextWrapper);
 		}
 
 		protected void WaitForConnection(object objListener)
@@ -63,7 +84,9 @@ namespace Clifton.WebServer
 			while (true)
 			{
 				// Wait for a connection.  Return to caller while we wait.
+				log.Append("W");
 				HttpListenerContext context = listener.GetContext();
+				log.Append("R");				
 				ContextWrapper contextWrapper = new ContextWrapper(context);
 
 				// Create a local workflow instance associated with the workflow for this request.

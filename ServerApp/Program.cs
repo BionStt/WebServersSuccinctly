@@ -1,5 +1,7 @@
-﻿/*
-Copyright (c) 2015, BMBFA
+﻿// #define USE_SEPARATE_APP_DOMAIN
+
+/*
+Copyright (c) 2015 Marc Clifton
 All rights reserved.
 */
 
@@ -94,6 +96,13 @@ namespace ServerApp
 			return WorkflowState.Continue;
 		}
 
+		public static WorkflowState LogHit(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
+		{
+			Console.Write(".");
+
+			return WorkflowState.Continue;
+		}
+
 		/// <summary>
 		/// Only intranet IP addresses are allowed.
 		/// </summary>
@@ -166,6 +175,7 @@ namespace ServerApp
 
 		static void Main(string[] args)
 		{
+#if USE_SEPARATE_APP_DOMAIN
 			if (AppDomain.CurrentDomain.IsDefaultAppDomain())
 			{
 				Console.WriteLine("Switching to secound AppDomain, for RazorEngine...");
@@ -180,7 +190,7 @@ namespace ServerApp
 
 				return;
 			}
-
+#endif
 			// Continue with our sever initialization...
 
 			//string externalIP = GetExternalIP();
@@ -329,8 +339,9 @@ namespace ServerApp
 		{
 			StaticContentLoader sph = new StaticContentLoader(websitePath);
 			workflow = new Workflow<ContextWrapper>(AbortHandler, OnException);
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(LogIPAddress));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(WhiteList));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogIPAddress));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogHit));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(WhiteList));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
@@ -368,6 +379,8 @@ namespace ServerApp
 
 		static void OnException(ContextWrapper wrapper, Exception ex)
 		{
+			Console.WriteLine(ex.Message);
+
 			if (ex is FileNotFoundException)
 			{
 				// Redirect to page not found
