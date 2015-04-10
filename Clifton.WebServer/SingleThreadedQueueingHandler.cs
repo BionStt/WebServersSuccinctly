@@ -108,14 +108,12 @@ namespace Clifton.WebServer
 					while (true)
 					{
 						semQueue.WaitOne();
-						Server.log.Append("D");
 						WorkflowContext context;
 
 						if (requests.TryDequeue(out context))
 						{
 							// In a round-robin manner, queue up the request on the current
 							// thread index then increment the index.
-							Server.log.Append("T" + threadIdx);
 							threadPool[threadIdx].Enqueue(context);
 							threadIdx = (threadIdx + 1) % MAX_WORKER_THREADS;
 						}
@@ -129,7 +127,6 @@ namespace Clifton.WebServer
 		public WorkflowState Process(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper context)
 		{
 			// Create a workflow context and queue it.
-			Server.log.Append("E");
 			requests.Enqueue(new WorkflowContext(workflowContinuation, context));
 			semQueue.Release();
 
@@ -162,7 +159,6 @@ namespace Clifton.WebServer
 			while (true)
 			{
 				ts.WaitOne();
-				Server.log.Append("Q" + ts.ThreadNumber);
 				WorkflowContext context;
 
 				if (ts.TryDequeue(out context))

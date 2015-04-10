@@ -55,7 +55,10 @@ namespace Clifton.WebServer
 		{
 			get
 			{
-				return sessionMap[context.EndpointAddress()];
+				Session ret = null;
+				sessionMap.TryGetValue(context.EndpointAddress(), out ret);
+				
+				return ret;
 			}
 		}
 

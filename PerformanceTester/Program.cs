@@ -19,9 +19,9 @@ namespace PerformanceTester
 		{
 			List<Thread> threads = new List<Thread>();
 
-			for (int i = 0; i < 10; i++)
+			for (int i = 0; i < 3; i++)
 			{
-				Thread thread = new Thread(new ParameterizedThreadStart(RunForOneSecond));
+				Thread thread = new Thread(new ThreadStart(RunForOneSecond));
 				thread.IsBackground = true;
 				threads.Add(thread);
 			}
@@ -35,7 +35,7 @@ namespace PerformanceTester
 			Console.ReadLine();
 		}
 
-		static void RunForOneSecond(object state)
+		static void RunForOneSecond()
 		{
 			DateTime now = DateTime.Now;
 			WebClient client = new WebClient();
@@ -46,7 +46,7 @@ namespace PerformanceTester
 				while ((DateTime.Now - now).TotalMilliseconds < 1000)
 				{
 					Interlocked.Increment(ref n);
-					string downloadString = client.DownloadString("http://192.168.1.21/");
+					string downloadString = client.DownloadString("http://192.168.1.21/sayhi");
 				}
 			}
 			catch (Exception ex)

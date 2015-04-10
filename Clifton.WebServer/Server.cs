@@ -41,7 +41,8 @@ namespace Clifton.WebServer
 {
 	public class Server
 	{
-		public static StringBuilder log = new StringBuilder();
+		public static long CumulativeTime = 0;
+		public static long Samples = 0;
 
 		protected IRequestHandler handler;
 		protected Workflow<ContextWrapper> workflow;
@@ -58,7 +59,7 @@ namespace Clifton.WebServer
 			listener.Start();
 
 			Task.Run(() => WaitForConnection(listener));
-			//for (int i = 0; i < 500; i++)
+			//for (int i = 0; i < 20; i++)
 			//{
 			//	IAsyncResult result = listener.BeginGetContext(new AsyncCallback(WebRequestCallback), listener);
 			//}
@@ -84,9 +85,7 @@ namespace Clifton.WebServer
 			while (true)
 			{
 				// Wait for a connection.  Return to caller while we wait.
-				log.Append("W");
 				HttpListenerContext context = listener.GetContext();
-				log.Append("R");				
 				ContextWrapper contextWrapper = new ContextWrapper(context);
 
 				// Create a local workflow instance associated with the workflow for this request.

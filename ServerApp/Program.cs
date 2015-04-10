@@ -86,6 +86,41 @@ namespace ServerApp
 		public static RouteTable routeTable;
 		public static SessionManager sessionManager;
 
+		static void Main(string[] args)
+		{
+#if USE_SEPARATE_APP_DOMAIN
+			if (AppDomain.CurrentDomain.IsDefaultAppDomain())
+			{
+				Console.WriteLine("Switching to secound AppDomain, for RazorEngine...");
+				AppDomainSetup adSetup = new AppDomainSetup();
+				adSetup.ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+				var current = AppDomain.CurrentDomain;
+				var domain = AppDomain.CreateDomain("MyMainDomain", null, current.SetupInformation, new PermissionSet(PermissionState.Unrestricted), null);
+				var exitCode = domain.ExecuteAssembly(Assembly.GetExecutingAssembly().Location);
+
+				// RazorEngine will cleanup. 
+				AppDomain.Unload(domain);
+
+				return;
+			}
+#endif
+			// Continue with our sever initialization...
+
+			//string externalIP = GetExternalIP();
+			//Console.WriteLine("External IP: " + externalIP);
+			requestHandler = new SingleThreadedQueueingHandler();
+			string websitePath = GetWebsitePath();
+			routeTable = InitializeRouteTable();
+			sessionManager = new SessionManager(routeTable);
+			routeHandler = new RouteHandler(routeTable, sessionManager);
+			InitializeWorkflow(websitePath);
+			Server server = new Server();
+			server.Start(requestHandler, workflow);
+
+			Console.WriteLine("Press a key to exit the server.");
+			Console.ReadLine();
+		}
+
 		/// <summary>
 		/// A workflow item, implementing a simple instrumentation of the client IP address, port, and URL.
 		/// </summary>
@@ -120,6 +155,10 @@ namespace ServerApp
 		/// </summary>
 		public static WorkflowState Responder(WorkflowContinuation<ContextWrapper> workflowContinuation, ContextWrapper wrapper)
 		{
+			wrapper.Stopwatch.Stop();
+			Server.CumulativeTime += wrapper.Stopwatch.ElapsedTicks;
+			++Server.Samples;
+
 			wrapper.Context.Response.ContentEncoding = wrapper.PendingResponse.Encoding;
 			wrapper.Context.Response.ContentType = wrapper.PendingResponse.MimeType;
 			wrapper.Context.Response.ContentLength64 = wrapper.PendingResponse.Data.Length;
@@ -171,41 +210,6 @@ namespace ServerApp
 			}
 
 			return WorkflowState.Continue;
-		}
-
-		static void Main(string[] args)
-		{
-#if USE_SEPARATE_APP_DOMAIN
-			if (AppDomain.CurrentDomain.IsDefaultAppDomain())
-			{
-				Console.WriteLine("Switching to secound AppDomain, for RazorEngine...");
-				AppDomainSetup adSetup = new AppDomainSetup();
-				adSetup.ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
-				var current = AppDomain.CurrentDomain;
-				var domain = AppDomain.CreateDomain("MyMainDomain", null, current.SetupInformation, new PermissionSet(PermissionState.Unrestricted), null);
-				var exitCode = domain.ExecuteAssembly(Assembly.GetExecutingAssembly().Location);
-
-				// RazorEngine will cleanup. 
-				AppDomain.Unload(domain);
-
-				return;
-			}
-#endif
-			// Continue with our sever initialization...
-
-			//string externalIP = GetExternalIP();
-			//Console.WriteLine("External IP: " + externalIP);
-			requestHandler = new SingleThreadedQueueingHandler();
-			string websitePath = GetWebsitePath();
-			routeTable = InitializeRouteTable();
-			sessionManager = new SessionManager(routeTable);
-			routeHandler = new RouteHandler(routeTable, sessionManager);
-			InitializeWorkflow(websitePath);
-			Server server = new Server();
-			server.Start(requestHandler, workflow);
-
-			Console.WriteLine("Press a key to exit the server.");
-			Console.ReadLine();
 		}
 
 		public static RouteTable InitializeRouteTable()
@@ -306,6 +310,40 @@ namespace ServerApp
 					}
 			});
 
+			routeTable.AddRoute("get", "loadtests", new RouteEntry()
+			{
+				RouteHandler = (continuation, wrapper, session, pathParams) =>
+					{
+						long nanosecondsPerTick = (1000L * 1000L * 1000L) / System.Diagnostics.Stopwatch.Frequency;
+
+						if (Server.Samples == 0)
+						{
+							wrapper.SetPendingResponse("<p>No samples!</p>");
+						}
+						else
+						{
+							long avgTime = Server.CumulativeTime * nanosecondsPerTick / Server.Samples;
+							string info = String.Format("<p>{0} responses, avg. response time = {1}ns</p><p>Resetting sample info.</p>", Server.Samples, avgTime.ToString("N0"));
+							Server.CumulativeTime = 0;
+							Server.Samples = 0;
+							wrapper.SetPendingResponse(info);
+						}
+
+						return WorkflowState.Continue;
+					}
+			});
+
+			routeTable.AddRoute("get", "sayhi", new RouteEntry()
+			{
+				RouteHandler = (continuation, wrapper, session, pathParams) =>
+				{
+					wrapper.SetPendingResponse("<p>hello</p>");
+
+					return WorkflowState.Continue;
+				}
+			});
+
+
 			return routeTable;
 		}
 
@@ -342,11 +380,12 @@ namespace ServerApp
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogIPAddress));
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogHit));
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(WhiteList));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(CsrfInjector));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(ViewEngine));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(CsrfInjector));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(Responder));
 		}
 
@@ -359,6 +398,11 @@ namespace ServerApp
 			{
 				// TODO: Fixup for running out of bin\Debug.  This is rather kludgy!
 				websitePath = websitePath.LeftOfRightmostOf("\\bin\\Debug\\" + websitePath.RightOfRightmostOf("\\")) + "\\Website";
+			}
+			else if (websitePath.Contains("\\bin\\Release"))
+			{
+				// TODO: Fixup for running out of bin\Debug.  This is rather kludgy!
+				websitePath = websitePath.LeftOfRightmostOf("\\bin\\Release\\" + websitePath.RightOfRightmostOf("\\")) + "\\Website";
 			}
 			else
 			{

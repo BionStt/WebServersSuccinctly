@@ -54,10 +54,13 @@ namespace Clifton.WebServer
 		public HttpListenerContext Context { get; protected set; }
 		public Response PendingResponse { get; set; }
 		public Session Session { get; set; }
+		public System.Diagnostics.Stopwatch Stopwatch { get; set; }
 
 		public ContextWrapper(HttpListenerContext context)
 		{
 			Context = context;
+			Stopwatch = new System.Diagnostics.Stopwatch();
+			Stopwatch.Start();
 		}
 
 		/// <summary>
