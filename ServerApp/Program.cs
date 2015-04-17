@@ -164,7 +164,7 @@ namespace ServerApp
 			wrapper.Context.Response.ContentLength64 = wrapper.PendingResponse.Data.Length;
 			wrapper.Context.Response.OutputStream.Write(wrapper.PendingResponse.Data, 0, wrapper.PendingResponse.Data.Length);
 			wrapper.Context.Response.StatusCode = 200;			// OK
-			wrapper.Context.Response.OutputStream.Close();
+			wrapper.Context.Response.Close();
 
 			return WorkflowState.Continue;
 		}
@@ -380,11 +380,11 @@ namespace ServerApp
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogIPAddress));
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(LogHit));
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(WhiteList));
-			// workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
-			// workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(sessionManager.Provider));
+			workflow.AddItem(new WorkflowItem<ContextWrapper>(requestHandler.Process));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(routeHandler.Route));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(sph.GetContent));
-			workflow.AddItem(new WorkflowItem<ContextWrapper>(ViewEngine));
+			// workflow.AddItem(new WorkflowItem<ContextWrapper>(ViewEngine));
 			// workflow.AddItem(new WorkflowItem<ContextWrapper>(CsrfInjector));
 			workflow.AddItem(new WorkflowItem<ContextWrapper>(Responder));
 		}
