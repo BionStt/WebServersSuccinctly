@@ -109,6 +109,7 @@ namespace Clifton.WebServer
 			if ( (!wc.Abort) && (!wc.Done) )
 			{
 				wc.Defer = false;
+				wc.Deferred = false;
 				InternalContinue(wc, data);
 			}
 		}
@@ -155,6 +156,12 @@ namespace Clifton.WebServer
 					// TODO: Should we use a different flag, like "Exception"?  Can't be Abort, as this invokes an app-specific handler.
 					wc.Done = true;
 				}
+			}
+
+			if (wc.Defer)
+			{
+				// Synchronization, we're done with this loop and the workflow can now continue on another thread.
+				wc.Deferred = true;
 			}
 		}
 	}

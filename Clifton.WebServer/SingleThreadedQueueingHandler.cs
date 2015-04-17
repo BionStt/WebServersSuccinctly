@@ -163,6 +163,8 @@ namespace Clifton.WebServer
 
 				if (ts.TryDequeue(out context))
 				{
+					// Wait until we exit the workflow internal continue from a defering state.
+					while (!context.WorkflowContinuation.Deferred) Thread.Sleep(0);
 					// Continue with where we left off for this context's workflow.
 					context.WorkflowContinuation.Workflow.Continue(context.WorkflowContinuation, context.Context);
 				}

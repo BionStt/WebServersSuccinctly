@@ -42,20 +42,37 @@ namespace Clifton.WebServer
 	public class Server
 	{
 		public static long CumulativeTime = 0;
+		public static Dictionary<string, long> PageTimes = new Dictionary<string, long>();
+		public static Dictionary<string, long> PageHits = new Dictionary<string, long>();
 		public static long Samples = 0;
 
 		protected IRequestHandler handler;
 		protected Workflow<ContextWrapper> workflow;
 		protected HttpListener listener;
 
+		public static Dictionary<string, string> ProcessUrlDelimitedParams(string parms)
+		{
+			Dictionary<string, string> kvParams = new Dictionary<string, string>();
+			parms.If(d => d.Length > 0, (d) => d.Split('&').ForEach(keyValue => kvParams[keyValue.LeftOf('=').ToLower()] = Uri.UnescapeDataString(keyValue.RightOf('='))));
+
+			return kvParams;
+		}
+
+		public static Dictionary<string, object> ProcessUrlDelimitedParamsAsStringObjectPairs(string parms)
+		{
+			Dictionary<string, object> kvParams = new Dictionary<string, object>();
+			parms.If(d => d.Length > 0, (d) => d.Split('&').ForEach(keyValue => kvParams[keyValue.LeftOf('=').ToLower()] = Uri.UnescapeDataString(keyValue.RightOf('='))));
+
+			return kvParams;
+		}
+
 		public void Start(IRequestHandler handler, Workflow<ContextWrapper> workflow)
 		{
 			this.handler = handler;
 			this.workflow = workflow;
 			listener = new HttpListener();
-			listener.Prefixes.Add("http://192.168.1.21/");
 			listener.Prefixes.Add("http://localhost/");
-			listener.Prefixes.Add("https://localhost:443/");
+			// listener.Prefixes.Add("https://localhost:443/");
 			listener.Start();
 
 			Task.Run(() => WaitForConnection(listener));

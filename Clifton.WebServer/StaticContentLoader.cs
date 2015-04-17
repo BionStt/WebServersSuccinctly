@@ -78,6 +78,8 @@ namespace Clifton.WebServer
 				string path = wrapper.Context.Path();
 				string ext = wrapper.Context.Extension();
 
+				// Console.WriteLine(path);
+
 				// Default to index.html if only the URL is provided with no additional page information.
 				if (String.IsNullOrEmpty(path))
 				{

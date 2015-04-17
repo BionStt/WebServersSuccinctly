@@ -57,7 +57,19 @@ namespace Clifton.WebServer
 		public string Path
 		{
 			get { return path; }
-			set { path = value.ToLower(); }
+			set 
+			{
+				// Programmer should not need to worry about whether paths begin with a leading slash
+				// or not in the route table.
+				if (value.BeginsWith("/"))
+				{
+					path = value.Substring(1).ToLower();
+				}
+				else
+				{
+					path = value.ToLower();
+				}
+			}
 		}
 
 		/// <summary>

@@ -44,6 +44,7 @@ namespace Clifton.WebServer
 		public int WorkflowStep { get; set; }
 		public bool Abort { get; set; }
 		public bool Defer { get; set; }
+		public bool Deferred { get; set; }
 		public bool Done { get; set; }
 		public Workflow<T> Workflow { get; protected set; }
 

@@ -32,6 +32,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -41,10 +42,12 @@ namespace Clifton.WebServer
 {
 	public class RouteTable
 	{
+		protected string websitePath;		// used for dumping static page routes.
 		protected ConcurrentDictionary<RouteKey, RouteEntry> routes;
 
-		public RouteTable()
+		public RouteTable(string websitePath)
 		{
+			this.websitePath = websitePath;
 			routes = new ConcurrentDictionary<RouteKey, RouteEntry>();
 		}
 
@@ -166,6 +169,40 @@ namespace Clifton.WebServer
 		public RouteKey NewKey(string verb, string path, string contentType = "*")
 		{
 			return new RouteKey() { Verb = verb, Path = path, ContentType = contentType };
+		}
+
+		public void DumpRoutes()
+		{
+			Console.WriteLine("-- Custom Routes --");
+			string s = String.Format("{0, -7} {1, -60} {2, -10} {3, -10} {4, -10}", "Verb", "Path", "Exp?", "Auth?", "Handler?");
+			Console.WriteLine(s);
+			s = String.Format("{0, -7} {1, -60} {2, -10} {3, -10} {4, -10}", new string('-', 7), new string('-', 60), new string('-', 10), new string('-', 10), new string('-', 10));
+			Console.WriteLine(s);
+
+			foreach (KeyValuePair<RouteKey, RouteEntry> kvp in routes)
+			{
+				s = String.Format("{0, -7} {1, -60} {2, -10} {3, -10} {4, -10}", kvp.Key.Verb, kvp.Key.Path, kvp.Value.SessionExpirationHandler != null, kvp.Value.AuthorizationHandler != null, kvp.Value.RouteHandler != null);
+				Console.WriteLine(s);
+			}
+
+			Console.WriteLine("\r\n-- Static pages --");
+			s = String.Format("{0, -7} {1, -60}", "Verb", "Path");
+			Console.WriteLine(s);
+			s = String.Format("{0, -7} {1, -60}", new string('-', 7), new string('-', 60));
+			Console.WriteLine(s);
+
+			string[] pages = Directory.GetFiles(websitePath, "*.html", SearchOption.AllDirectories);
+
+			foreach (string pagePath in pages)
+			{
+				string localPath = pagePath.RightOf(websitePath).RightOf("\\").Replace("\\", "/");
+
+				if (!routes.ContainsKey(NewKey("GET", localPath)))
+				{
+					s = String.Format("{0, -7} {1, -60}", "get", localPath);
+					Console.WriteLine(s);
+				}
+			}
 		}
 
 		/// <summary>

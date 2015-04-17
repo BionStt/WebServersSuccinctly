@@ -50,8 +50,7 @@ namespace Clifton.WebServer
 		{
 			HttpListenerRequest request = context.Request;
 			string parms = request.RawUrl.RightOf("?");
-			Dictionary<string, string> kvParams = new Dictionary<string, string>();
-			parms.If(d => d.Length > 0, (d) => d.Split('&').ForEach(keyValue => kvParams[keyValue.LeftOf('=').ToLower()] = Uri.UnescapeDataString(keyValue.RightOf('='))));
+			Dictionary<string, string> kvParams = Server.ProcessUrlDelimitedParams(parms);
 
 			return kvParams;
 		}
@@ -66,9 +65,9 @@ namespace Clifton.WebServer
 			response.ContentEncoding = Encoding.UTF8;
 			context.Response.ContentType = "text/html";
 			context.Response.ContentLength64 = data.Length;
-			context.Response.OutputStream.Write(data, 0, data.Length);
 			response.StatusCode = 200;
-			response.OutputStream.Close();
+			context.Response.OutputStream.Write(data, 0, data.Length);
+			response.Close();
 		}
 
 		/// <summary>
@@ -82,7 +81,7 @@ namespace Clifton.WebServer
 			response.StatusCode = (int)HttpStatusCode.Redirect;
 			string redirectUrl = request.Url.Scheme + "://" + request.Url.Host + "/" + url;
 			response.Redirect(redirectUrl);
-			response.OutputStream.Close();
+			response.Close();
 		}
 	}
 }

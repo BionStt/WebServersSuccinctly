@@ -85,6 +85,7 @@ namespace ServerApp
 		public static RouteHandler routeHandler;
 		public static RouteTable routeTable;
 		public static SessionManager sessionManager;
+		public static string websitePath;
 
 		static void Main(string[] args)
 		{
@@ -109,7 +110,7 @@ namespace ServerApp
 			//string externalIP = GetExternalIP();
 			//Console.WriteLine("External IP: " + externalIP);
 			requestHandler = new SingleThreadedQueueingHandler();
-			string websitePath = GetWebsitePath();
+			websitePath = GetWebsitePath();
 			routeTable = InitializeRouteTable();
 			sessionManager = new SessionManager(routeTable);
 			routeHandler = new RouteHandler(routeTable, sessionManager);
@@ -189,6 +190,7 @@ namespace ServerApp
 				catch (Exception ex)
 				{
 					// Helps with debugging runtime compilation errors!
+					Console.WriteLine(ex.Message);
 				}
 			}
 
@@ -214,7 +216,7 @@ namespace ServerApp
 
 		public static RouteTable InitializeRouteTable()
 		{
-			RouteTable routeTable = new RouteTable();
+			RouteTable routeTable = new RouteTable(websitePath);
 
 			// Test parameterized URL
 			routeTable.AddRoute("get", "param/{p1}/subpage/{p2}", new RouteEntry()
